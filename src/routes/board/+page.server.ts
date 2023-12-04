@@ -1,12 +1,16 @@
-import db from '$lib/db';
+import { posts as postsData } from '$lib/db';
 import { posts } from '$lib/stores/posts';
+import _ from 'lodash';
 
 export async function load() {
-    let postsData = db.data.posts ?? [];
 
-    return {
-        props: {
-            posts: postsData
-        }
-    };
+    let sortedAndSliced = postsData
+        .orderBy(['timestamp'], ['desc'])
+        .slice(0)
+        .take(10)
+        .value();
+
+    posts.set(sortedAndSliced);
+
+    return { count: postsData.size().value() };
 }
