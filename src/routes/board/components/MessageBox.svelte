@@ -1,10 +1,13 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
+
+    // Create an event dispatcher to handle custom events
     const dispatch = createEventDispatcher();
 
     let message = "";
     export let reloading: boolean;
 
+    // Reactive statement to check if a message has been typed
     $: messageTyped = message.trim() !== "";
 
     function sendMessage() {
@@ -15,6 +18,7 @@
     }
 
     function reloadMessages() {
+        // Reload with message offset of 0
         dispatch("reload", 0);
     }
 </script>

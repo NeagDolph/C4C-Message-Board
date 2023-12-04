@@ -19,13 +19,21 @@ export async function POST({ request }) {
 
     db.write();
 
-    _listeners.forEach((emit, index) => {
+    let listenerEntries = Object.entries(_listeners);
+
+    listenerEntries.forEach(([userId, emit], index) => {
+
+        let emitData = {
+            message: message,
+            userId: userId,
+            sender: requestData.userId
+        }
         try {
-            emit(JSON.stringify(message));
+            emit(JSON.stringify(emitData));
         } catch (error) {
             if (error.code === 'ERR_INVALID_STATE') {
                 // Remove the emit function from the _listeners array
-                _listeners.splice(index, 1);
+                delete _listeners[userId]
             } else {
                 throw error;
             }

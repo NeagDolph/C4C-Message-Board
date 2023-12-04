@@ -18,8 +18,7 @@
         observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
-                    // Load more messages when the loadMoreTrigger is in view
-                    console.log("intersecting");
+                    // Load more messages when the trigger is in view
                     dispatch("reload", $posts.length);
                 }
             },

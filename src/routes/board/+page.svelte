@@ -7,19 +7,13 @@
     import { source } from "sveltekit-sse";
     import { onDestroy, onMount } from "svelte";
 
-    let value;
-
     let reloading = false;
 
+    // Data sent from server
     export let data;
-
     let count = data.count;
 
-    // $: {
-    // $value;
-    // console.log("VAL", $value);
-    // posts.update((p) => [...p, $value]);
-    // }
+    let userId: string;
 
     async function sendMessage(event: CustomEvent) {
         const response = await fetch("/api/send-message", {
@@ -27,7 +21,7 @@
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ message: event.detail }),
+            body: JSON.stringify({ message: event.detail, userId }),
         });
 
         if (response.ok) {
@@ -74,11 +68,30 @@
     }
 
     onMount(() => {
-        value = source("/events/messages");
+        let eventSource = source("/events/messages");
+
+        eventSource.subscribe((rawData: string) => {
+            let data;
+
+            try {
+                data = JSON.parse(rawData);
+            } catch (e) {
+                return;
+            }
+
+            if (data.userId) {
+                userId = data.userId;
+            }
+
+            if (data.message) {
+                if (data.sender !== data.userId) {
+                    posts.update((p) => [...p, data.message]);
+                }
+            }
+        });
     });
 </script>
 
-<p>poopu{typeof window !== "undefined" && $value}</p>
 <MessageBox
     on:send={sendMessage}
     on:reload={() => reloadMessages()}
