@@ -13,6 +13,7 @@
         "@fortawesome/fontawesome-free": "^6.5.1",
         "@neoconfetti/svelte": "^1.0.0",
         "@sveltejs/adapter-auto": "^2.0.0",
+        "@sveltejs/adapter-vercel": "^3.1.0",
         "@sveltejs/kit": "^1.27.4",
         "@types/cookie": "^0.5.1",
         "@types/leo-profanity": "^1.5.3",
