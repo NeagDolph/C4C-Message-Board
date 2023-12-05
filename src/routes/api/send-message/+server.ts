@@ -1,13 +1,28 @@
 import { posts, db } from '$lib/db';
 import { json } from '@sveltejs/kit';
 import filter from 'leo-profanity';
-import { _listeners } from '../../events/messages/+server.js';
-// import type { } from "sveltekit-sse"
+import { _listeners } from '../../events/+server.js';
 
 export async function POST({ request }) {
     const requestData = await request.json();
 
     const censored = filter.clean(requestData.message)
+
+    // Return error if message is empty.
+    if (censored.length <= 0) {
+        return json({
+            status: 400,
+            message: "The message cannot be empty."
+        });
+    }
+
+    // Return error if message length is too long.
+    if (censored.length > 128) {
+        return json({
+            status: 400,
+            message: "The message cannot be longer than 128 characters."
+        });
+    }
 
     const message = {
         id: Date.now().toString(),
@@ -28,11 +43,15 @@ export async function POST({ request }) {
             userId: userId,
             sender: requestData.userId
         }
+
+        // Do not send message updates back to user who sent the message
+        if (emitData.sender === emitData.userId) return
+
         try {
             emit(JSON.stringify(emitData));
-        } catch (error) {
+        } catch (error: any) {
             if (error.code === 'ERR_INVALID_STATE') {
-                // Remove the emit function from the _listeners array
+                // Remove the emit function from _listeners if invalid
                 delete _listeners[userId]
             } else {
                 throw error;
@@ -43,6 +62,3 @@ export async function POST({ request }) {
 
     return json({ message: message, count: posts.size().value() })
 }
-
-
-

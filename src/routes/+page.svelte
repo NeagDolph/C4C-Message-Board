@@ -1,19 +1,29 @@
 <script lang="ts">
     import type { Post } from "$lib/$types";
-    import type { PageData } from "./$types";
-    import MessageList from "./components/MessageList.svelte"; // import the MessageList component
-    import MessageBox from "./components/MessageBox.svelte"; // import the MessageBox component
+    import MessageList from "./components/MessageList.svelte";
+    import MessageBox from "./components/MessageBox.svelte";
     import { posts } from "$lib/stores/posts";
     import { source } from "sveltekit-sse";
-    import { onDestroy, onMount } from "svelte";
+    import { onMount } from "svelte";
 
     let reloading = false;
+
+    // SSE source
+    let eventSource;
 
     // Data sent from server
     export let data;
     let count = data.count;
 
+    // Session ID for server sent events.
     let userId: string;
+
+    // Object format for SSE incoming data.
+    interface SSEData {
+        userId?: string;
+        message?: Post;
+        sender?: string;
+    }
 
     async function sendMessage(event: CustomEvent) {
         const response = await fetch("/api/send-message", {
@@ -35,7 +45,12 @@
         }
     }
 
-    async function reloadMessages(offset = 0): Promise<void> {
+    async function reloadMessages(): Promise<void> {
+        loadMessages(0);
+        initSSE();
+    }
+
+    async function loadMessages(offset = 0): Promise<void> {
         if (offset >= count) {
             return;
         }
@@ -67,11 +82,11 @@
         }
     }
 
-    onMount(() => {
-        let eventSource = source("/events/messages");
-
+    function initSSE() {
+        if (eventSource !== undefined) eventSource.close();
+        eventSource = source("/events");
         eventSource.subscribe((rawData: string) => {
-            let data;
+            let data: SSEData;
 
             try {
                 data = JSON.parse(rawData);
@@ -83,12 +98,16 @@
                 userId = data.userId;
             }
 
-            if (data.message) {
-                if (data.sender !== data.userId) {
-                    posts.update((p) => [...p, data.message]);
-                }
+            // Check if message sent from self
+            if (data.sender !== data.userId && data.message !== undefined) {
+                const message: Post = data.message;
+                posts.update((p) => [...p, message]);
             }
         });
+    }
+
+    onMount(() => {
+        initSSE();
     });
 </script>
 
@@ -97,7 +116,7 @@
     on:reload={() => reloadMessages()}
     {reloading}
 />
-<MessageList on:reload={(event) => reloadMessages(event.detail)} />
+<MessageList on:reload={(event) => loadMessages(event.detail)} />
 {#if count > 10 && count === $posts.length}
     <p class="text-center">You've reached the end...</p>
 {/if}

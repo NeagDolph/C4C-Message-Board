@@ -1,7 +1,7 @@
 import { event } from 'sveltekit-sse'
 import { v4 as uuidv4 } from 'uuid';
 
-export let _listeners = {}
+export let _listeners: { [key: string]: (data: string) => any } = {}
 
 /**
  * Function to delay the execution of the next line of code
